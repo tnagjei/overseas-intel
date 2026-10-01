@@ -1,5 +1,7 @@
 # 海外情报
 
+[![验证](https://github.com/tnagjei/overseas-intel/actions/workflows/check.yml/badge.svg)](https://github.com/tnagjei/overseas-intel/actions/workflows/check.yml)
+
 给自己看的出海经营情报站，基于 [AIHOT](https://github.com/KKKKhazix/AIHOT) 改造，完整程序位于本仓库根目录，保留原 MIT 许可和 Git 历史。
 
 ## 第一版
@@ -12,7 +14,7 @@
 | 内容与订阅 | Newsletter、会员、支付、定价与留存 |
 | 自动化工作流 | 编码、Agent、MCP、部署和内容运营 |
 
-首批配置 18 个公开 RSS/Atom 信源、24 个主题；可用性以真实试抓为准。优先收录影响个人业务的变化与可复用实践，不把推测的需求、收入和因果写成事实。
+首批配置 18 个公开 RSS/Atom 信源、24 个主题。2026-10-01 真实试抓时，启用的 16 个信源全部通过；Search Engine Land 和 Substack 返回 HTTP 403，已停用，后续可在后台复查。优先收录影响个人业务的变化与可复用实践，不把推测的需求、收入和因果写成事实。
 
 沿用原评分类型、五轴权重与双次评分。门槛待本人标注 100–200 条样本后校准。本版不自动发布到 WordPress，也不提供对外付费订阅。
 
@@ -62,7 +64,7 @@ node --test apps/web/tests/*.test.ts
 node scripts/overseas-source-audit.mjs --disable-failing
 ```
 
-结果在 .data/source-audit.json，失败源可停用后复查。GitHub Actions 检查类型、构建、数据库、网页、MCP、Docker 和整站私人认证。
+结果在 .data/source-audit.json，失败源可停用后复查。GitHub Actions 检查类型、构建、数据库、网页、MCP、Docker 和整站私人认证。第一版验收：16 个网页测试和 183 个后端测试全部通过；详见 [验证记录](docs/personal-v1.md)。
 
 精选校准见 docs/selection.md；个人版改动与验证记录见 [docs/personal-v1.md](docs/personal-v1.md)。首次改造的门槛不宣称已校准。
 
