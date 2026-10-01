@@ -142,7 +142,7 @@
       "name": "Google Search Central",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://developers.google.com/search/blog/rss.xml",
+        "feedUrl": "https://feeds.feedburner.com/blogspot/amDG",
         "_aihot": {
           "initialBackfillLimit": 8
         }
@@ -202,7 +202,7 @@
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false,
-      "enabled": true
+      "enabled": false
     },
     {
       "id": "ahrefs",
@@ -360,7 +360,7 @@
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false,
-      "enabled": true
+      "enabled": false
     },
     {
       "id": "memberpress",

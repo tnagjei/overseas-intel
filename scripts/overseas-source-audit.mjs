@@ -12,9 +12,12 @@ for (let at=0;at<data.sources.length;at+=3) {
       const { candidates }=await fetchRss({ ...source,cursor:{} },{ force:true });
       if (!candidates.length) throw new Error("未解析到条目");
       if (!candidates.every((c)=>c.title&&/^https?:/.test(c.url))) throw new Error("条目映射无效");
-      return { id:source.id,name:source.name,ok:true,count:candidates.length };
+      const dates=candidates.map((c)=>c.publishedAt).filter((d)=>d instanceof Date&&!Number.isNaN(d.getTime()));
+      return { id:source.id,name:source.name,enabled:source.enabled!==false,ok:true,count:candidates.length,
+        sampleTitle:candidates[0].title.slice(0,200),
+        latestPublishedAt:dates.length?new Date(Math.max(...dates.map((d)=>d.getTime()))).toISOString():null };
     } catch(error) {
-      return { id:source.id,name:source.name,ok:false,error:String(error).slice(0,200) };
+      return { id:source.id,name:source.name,enabled:source.enabled!==false,ok:false,error:String(error).slice(0,200) };
     }
   }));
   results.push(...batch);
@@ -27,6 +30,9 @@ if (process.argv.includes("--disable-failing")) {
   writeFileSync(file,JSON.stringify(data,null,2)+"\n");
 }
 const ready=results.filter((r)=>r.ok).length;
+const enabled=results.filter((r)=>data.sources.find((s)=>s.id===r.id)?.enabled!==false);
+const enabledReady=enabled.filter((r)=>r.ok).length;
 console.log("SOURCE_AUDIT_JSON "+JSON.stringify(results));
 console.log("可用信源："+ready+"/"+results.length);
-if (ready<5) process.exitCode=1;
+console.log("已启用信源："+enabledReady+"/"+enabled.length);
+if (enabledReady<5||enabledReady!==enabled.length) process.exitCode=1;
