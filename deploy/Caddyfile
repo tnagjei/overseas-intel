@@ -1,6 +1,9 @@
-# HTTPS in front of the site: Caddy gets and renews the certificate for SITE_DOMAIN and compresses
-# responses. Point the domain's DNS at this server first.
+# 整站私人认证，未设置密码哈希时拒绝启动。
 {$SITE_DOMAIN} {
 	encode zstd gzip
+	basic_auth {
+		{$PRIVATE_USERNAME} {$PRIVATE_PASSWORD_HASH}
+	}
+	header X-Robots-Tag "noindex, nofollow, noarchive"
 	reverse_proxy web:3000
 }

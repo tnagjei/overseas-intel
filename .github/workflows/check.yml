@@ -1,38 +1,214 @@
-# 首次导入完整框架与 Git 历史，完成后由正式验证工作流替换。
-name: 导入 AIHOT
+# Checks on GitHub-hosted runners: install, typecheck, web build, the web and backend tests on a fresh
+# PostgreSQL, the built site's smoke check, and the Docker image brought up with docker compose.
+# Only GitHub-owned actions, pinned to a full commit SHA.
+name: 海外情报 · 验证
+
 on:
   push:
     branches: [main]
-    paths: [".github/workflows/check.yml"]
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
+      - "AGENTS.md"
+      - "industry/brand/*.png"
+      - "industry/brand/*.ico"
+      - "industry/brand/nameplates/**"
+  pull_request:
   workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  import:
-    if: github.repository == 'tnagjei/overseas-intel'
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: aihot_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 2s --health-timeout 5s --health-retries 30
+    env:
+      DATABASE_URL: postgres://postgres:ci@127.0.0.1:5432/aihot_ci
+      SITE_URL: http://127.0.0.1:3000
+      API_BASE_URL: http://127.0.0.1:3001
+      SESSION_SECRET: ci-session-secret-0123456789abcdef
+      IMG_PROXY_SIGN_SECRET: ci-img-secret-0123456789abcdef
+      COLLECT_ENABLED: "false"
+      MODEL_CALLS_ENABLED: "false"
+      FEISHU_CONTENT_PUSH_ENABLED: "false"
+      FEISHU_INTERNAL_ENABLED: "false"
+      INDEXNOW_SUBMIT_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: Personal configuration and brand
+        run: |
+          node scripts/overseas-brand.mjs
+          node scripts/overseas-check.mjs
+          mkdir -p "$RUNNER_TEMP/overseas-font"
+          npm pack @fontsource/noto-sans-sc@5.3.0 --pack-destination "$RUNNER_TEMP" --silent
+          tar -xzf "$RUNNER_TEMP/fontsource-noto-sans-sc-5.3.0.tgz" -C "$RUNNER_TEMP/overseas-font"
+          node scripts/nameplates.ts "$RUNNER_TEMP/overseas-font/package"
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build web
+        run: npm run build -w @aihot/web
+      - name: Web tests
+        run: node --test apps/web/tests/*.test.ts
+
+      - name: Migrate and seed topics
+        run: |
+          node scripts/migrate.ts
+          node scripts/seed.ts --topics-only
+      - name: Smoke check of the built site
+        # The site itself runs with collection and model calls off (the tests below use local stubs).
+        env:
+          COLLECT_ENABLED: "false"
+          MODEL_CALLS_ENABLED: "false"
+        run: |
+          node apps/api/src/main.ts > "$RUNNER_TEMP/api.log" 2>&1 &
+          (cd apps/web && NODE_ENV=production exec node server.ts) > "$RUNNER_TEMP/web.log" 2>&1 &
+          node scripts/overseas-wait.mjs
+          node scripts/smoke.ts --base http://127.0.0.1:3000
+          node scripts/mcp-check.ts http://127.0.0.1:3000/api/mcp
+      # After the smoke check, which reads an empty database: these write their own rows.
+      - name: Backend tests
+        # Only local provider stubs; no production credentials are supplied.
+        env:
+          MODEL_CALLS_ENABLED: "true"
+        run: npm test
+      - name: Save verified brand files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: overseas-intel-brand
+          retention-days: 7
+          path: |
+            industry/brand/icon.png
+            industry/brand/icon-192.png
+            industry/brand/apple-icon.png
+            industry/brand/favicon.ico
+            industry/brand/nameplates/*.svg
+            industry/brand/nameplates/index.json
+      - name: Server logs
+        if: failure()
+        run: tail -n 60 "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/web.log" 2>/dev/null || true
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Configure a throwaway site
+        run: |
+          node scripts/init-env.ts
+          # No outside calls in CI: nothing is collected and no model is asked.
+          sed -i 's/^COLLECT_ENABLED=.*/COLLECT_ENABLED=false/; s/^MODEL_CALLS_ENABLED=.*/MODEL_CALLS_ENABLED=false/' .env
+          # The smoke check reaches the site by its compose service name.
+          echo "MCP_ALLOWED_HOSTS=web" >> .env
+      - name: Build and start with docker compose
+        run: docker compose up -d --build
+      - name: Smoke check
+        run: |
+          for i in $(seq 1 90); do curl -fsS -o /dev/null http://127.0.0.1:3000/api/health 2>/dev/null && break; sleep 2; done
+          docker compose ps
+          docker compose run --rm --no-deps --entrypoint node setup scripts/smoke.ts --base http://web:3000
+          docker compose exec -T db psql -U aihot -d aihot -Atc "select count(*) from sources" | grep -q '^18$'
+      - name: Private gateway
+        env:
+          SITE_DOMAIN: http://localhost
+          PRIVATE_USERNAME: owner
+        run: |
+          if docker run --rm -e SITE_DOMAIN=http://localhost -e PRIVATE_USERNAME=owner -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile; then
+            echo "An empty password hash must be rejected"
+            exit 1
+          fi
+          export PRIVATE_PASSWORD_HASH="$(docker run --rm caddy:2-alpine caddy hash-password --plaintext ci-access-only)"
+          docker compose --profile https up -d caddy
+          for i in $(seq 1 30); do
+            status="$(curl -s -o /dev/null -w '%{http_code}' http://localhost/api/health || true)"
+            test "$status" = 401 && break
+            sleep 1
+          done
+          for path in / /feed.xml /api/v1/items /api/mcp; do
+            test "$(curl -s -o /dev/null -w '%{http_code}' "http://localhost$path")" = 401
+          done
+          for path in / /feed.xml /api/v1/items; do
+            test "$(curl -s -u owner:ci-access-only -o /dev/null -w '%{http_code}' "http://localhost$path")" = 200
+          done
+      - name: Logs
+        if: failure()
+        run: docker compose logs --tail 80
+      - name: Stop
+        if: always()
+        run: docker compose --profile https down -v
+
+  sources:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      COLLECT_ENABLED: "false"
+      MODEL_CALLS_ENABLED: "false"
+      FEISHU_CONTENT_PUSH_ENABLED: "false"
+      FEISHU_INTERNAL_ENABLED: "false"
+      INDEXNOW_SUBMIT_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci --no-audit --no-fund
+      - name: Public RSS trial collection, without model calls
+        run: node scripts/overseas-source-audit.mjs
+      - name: Save source report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: overseas-intel-source-audit
+          path: .data/source-audit.json
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
+
+  brand:
+    needs: [check, docker]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'tnagjei/overseas-intel'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          fetch-depth: 0
-      - name: 导入固定上游版本与完整历史
-        shell: bash
+          name: overseas-intel-brand
+          path: industry/brand
+      - name: Commit verified generated assets
         run: |
-          if test -f package.json; then
+          if git diff --quiet -- industry/brand; then
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mapfile -d '' snapshot < <(git ls-tree -rz --name-only "$GITHUB_SHA")
-          git remote add upstream https://github.com/KKKKhazix/AIHOT.git
-          git fetch upstream
-          if ! git merge --no-commit --no-ff --allow-unrelated-histories cf8f8d07d68dfa9079becc72b0717a45b33485f3; then
-            test -f .git/MERGE_HEAD
-          fi
-          git restore --source="$GITHUB_SHA" --staged --worktree -- "${snapshot[@]}"
-          test -z "$(git diff --name-only --diff-filter=U)"
-          git commit -m "导入 AIHOT 固定版本源码并保留上游历史"
+          git add industry/brand/icon.png industry/brand/icon-192.png industry/brand/apple-icon.png industry/brand/favicon.ico industry/brand/nameplates
+          git commit -m "生成海外情报图标与刊头"
           git push origin HEAD:main

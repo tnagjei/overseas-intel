@@ -8,12 +8,36 @@
  * 没归上类的资料在日报里放进第一个 key 为 industry 的类别所在的节（没有就放最后一节）。
  */
 export const CATEGORIES = [
-  { key: "ai-models", label: "模型", section: "模型发布/更新", guide: "新模型、模型版本、权重开放、模型能力与价格变化的发布与评测结果" },
-  { key: "ai-products", label: "产品", section: "产品发布/更新", guide: "AI 产品、功能、应用、工具、API 与平台的发布和更新" },
-  { key: "industry", label: "行业", section: "行业动态", guide: "公司经营、融资并购、人事、合作、诉讼、监管与政策、市场与基础设施" },
-  { key: "paper", label: "论文", section: "论文研究", guide: "研究论文、技术报告、基准与数据集" },
-  { key: "tip", label: "教程", section: "技巧与观点", guide: "教程、实践经验、使用技巧、提示词与工具用法、深度技术讲解" },
-  { key: "opinion", label: "观点", section: "技巧与观点", guide: "人物观点、评论、分析、访谈、现象与趋势讨论" },
+  {
+    "key": "wordpress",
+    "label": "建站与维护",
+    "section": "建站与维护",
+    "guide": "WordPress、WooCommerce、插件、主题、托管、兼容性、性能与站点安全"
+  },
+  {
+    "key": "industry",
+    "label": "流量与获客",
+    "section": "流量与获客",
+    "guide": "Google、Bing、SEO、索引、Core Web Vitals、多语言、转化、广告与获客"
+  },
+  {
+    "key": "tools",
+    "label": "工具与产品",
+    "section": "工具与产品",
+    "guide": "海外工具站、API、开源产品、产品更新、成本与有证据的需求变化"
+  },
+  {
+    "key": "subscriptions",
+    "label": "内容与订阅",
+    "section": "内容与订阅",
+    "guide": "内容站、Newsletter、会员、支付、定价、留存与订阅经营"
+  },
+  {
+    "key": "tip",
+    "label": "自动化工作流",
+    "section": "自动化工作流",
+    "guide": "编码、Agent、MCP、自动化、部署、内容运营流程与可复用实践"
+  }
 ] as const;
 
 /**
@@ -32,11 +56,12 @@ export const CATEGORY_TAGS = [
 
 /** 可选的主题标签。 */
 export const TOPIC_TAGS = [
+  "WordPress", "WooCommerce", "SEO", "索引", "多语言", "Core Web Vitals", "站点安全", "会员", "Newsletter", "支付", "定价", "留存", "产品机会", "API", "工具站", "自动化",
   "Agent", "编码", "推理", "多模态", "语音", "视频", "图像生成", "RAG", "端侧", "数据/训练", "搜索", "部署/工程", "开源生态", "具身智能", "MCP/工具调用",
 ] as const;
 
 /** 可选的实体标签（公司、机构、平台）。 */
-export const ENTITY_TAGS = ["OpenAI", "Anthropic", "DeepSeek", "DeepMind", "Google", "Meta", "Microsoft", "xAI", "Hugging Face", "GitHub", "arXiv"] as const;
+export const ENTITY_TAGS = ["WordPress", "WooCommerce", "Cloudflare", "Vercel", "Ghost", "Stripe", "n8n", "Substack", "MemberPress", "Wordfence", "Patchstack", "Ahrefs", "OpenAI", "Anthropic", "DeepSeek", "DeepMind", "Google", "Meta", "Microsoft", "xAI", "Hugging Face", "GitHub", "arXiv"] as const;
 
 /** 模型常写的近义词，统一成词表里的写法。 */
 export const TAG_SYNONYMS: Readonly<Record<string, string>> = {
@@ -61,6 +86,18 @@ export const CATEGORY_BY_ITEM_TYPE: Readonly<Record<string, string>> = {
 
 /** 公司主题：id → 显示名、卡片上显示的标签（null 表示只用 entity:<id> 归类）、别名。 */
 export const ENTITIES: Record<string, { name: string; displayTag: string | null; aliases: string[] }> = {
+  "wordpress": {"name":"WordPress","displayTag":"WordPress","aliases":["WordPress","Gutenberg"]},
+  "woocommerce": {"name":"WooCommerce","displayTag":"WooCommerce","aliases":["WooCommerce"]},
+  "cloudflare": {"name":"Cloudflare","displayTag":"Cloudflare","aliases":["Cloudflare"]},
+  "vercel": {"name":"Vercel","displayTag":"Vercel","aliases":["Vercel","Next.js"]},
+  "ghost": {"name":"Ghost","displayTag":"Ghost","aliases":["Ghost CMS","Ghost Pro"]},
+  "stripe": {"name":"Stripe","displayTag":"Stripe","aliases":["Stripe"]},
+  "n8n": {"name":"n8n","displayTag":"n8n","aliases":["n8n"]},
+  "substack": {"name":"Substack","displayTag":"Substack","aliases":["Substack"]},
+  "memberpress": {"name":"MemberPress","displayTag":"MemberPress","aliases":["MemberPress"]},
+  "wordfence": {"name":"Wordfence","displayTag":"Wordfence","aliases":["Wordfence"]},
+  "patchstack": {"name":"Patchstack","displayTag":"Patchstack","aliases":["Patchstack"]},
+  "ahrefs": {"name":"Ahrefs","displayTag":"Ahrefs","aliases":["Ahrefs"]},
   openai: { name: "OpenAI", displayTag: "OpenAI", aliases: ["OpenAI", "ChatGPT", "Sora", "Codex", "GPT"] },
   anthropic: { name: "Anthropic", displayTag: "Anthropic", aliases: ["Anthropic", "Claude"] },
   google: { name: "Google", displayTag: "Google", aliases: ["Google", "DeepMind", "Gemini", "谷歌"] },
@@ -83,6 +120,18 @@ export const ENTITIES: Record<string, { name: string; displayTag: string | null;
  * 行业没有这个问题时可以留空数组。
  */
 export const IDENTITY_LEXICON: ReadonlyArray<{ id: string; name: string; patterns: RegExp[] }> = [
+  { id: "wordpress", name: "WordPress", patterns: [/wordpress|\bgutenberg\b/i] },
+  { id: "woocommerce", name: "WooCommerce", patterns: [/woocommerce|\bwoo\s?commerce\b/i] },
+  { id: "cloudflare", name: "Cloudflare", patterns: [/cloudflare/i] },
+  { id: "vercel", name: "Vercel", patterns: [/\bvercel\b|\bnext\.?js\b/i] },
+  { id: "ghost", name: "Ghost", patterns: [/ghost\.org|\bghost\s?(cms|pro|[4-9])\b|\bGhost\b/] },
+  { id: "stripe", name: "Stripe", patterns: [/\bstripe\b/i] },
+  { id: "n8n", name: "n8n", patterns: [/\bn8n\b/i] },
+  { id: "substack", name: "Substack", patterns: [/\bsubstack\b/i] },
+  { id: "memberpress", name: "MemberPress", patterns: [/memberpress/i] },
+  { id: "wordfence", name: "Wordfence", patterns: [/wordfence/i] },
+  { id: "patchstack", name: "Patchstack", patterns: [/patchstack/i] },
+  { id: "ahrefs", name: "Ahrefs", patterns: [/\bahrefs\b/i] },
   { id: "openai", name: "OpenAI", patterns: [/openai|chatgpt|\bgpt-?[o\d]|\bsora\b|\bcodex\b/i] },
   { id: "anthropic", name: "Anthropic", patterns: [/anthropic|\bclaude\b/i, /\b(?:opus|sonnet|haiku)\s*\d+(?:[.\-]\d+)*\b/i, /\bfable\s*\d+(?:[.\-]\d+)*\b|\bmythos\b/i] },
   { id: "google", name: "Google / Gemini", patterns: [/google|deepmind|\bgemini\b|notebooklm|\bveo\s?\d|\bAlphaFold\b|\bAMIE\b/i] },
@@ -119,9 +168,21 @@ export const IDENTITY_LEXICON: ReadonlyArray<{ id: string; name: string; pattern
 
 /** 这些域名上的文章，发布方就是对应的公司（托管平台如 GitHub、arXiv 不算）。 */
 export const PUBLISHER_DOMAINS: ReadonlyArray<{ entityId: string; domains: readonly string[] }> = [
+  {"entityId":"wordpress","domains":["wordpress.org"]},
+  {"entityId":"woocommerce","domains":["woocommerce.com"]},
+  {"entityId":"cloudflare","domains":["cloudflare.com"]},
+  {"entityId":"vercel","domains":["vercel.com"]},
+  {"entityId":"ghost","domains":["ghost.org"]},
+  {"entityId":"stripe","domains":["stripe.com"]},
+  {"entityId":"n8n","domains":["n8n.io"]},
+  {"entityId":"substack","domains":["substack.com"]},
+  {"entityId":"memberpress","domains":["memberpress.com"]},
+  {"entityId":"wordfence","domains":["wordfence.com"]},
+  {"entityId":"patchstack","domains":["patchstack.com"]},
+  {"entityId":"ahrefs","domains":["ahrefs.com"]},
   { entityId: "openai", domains: ["openai.com"] },
   { entityId: "anthropic", domains: ["anthropic.com", "claude.com"] },
-  { entityId: "google", domains: ["deepmind.google", "ai.google", "blog.google"] },
+  { entityId: "google", domains: ["deepmind.google", "ai.google", "blog.google", "developers.google.com", "search.google"] },
   { entityId: "deepseek", domains: ["deepseek.com"] },
   { entityId: "xai", domains: ["x.ai"] },
   { entityId: "meta", domains: ["ai.meta.com"] },

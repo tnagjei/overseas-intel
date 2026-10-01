@@ -36,10 +36,10 @@
 
 其后可选 0–5 个适用标签，并且只能来自以下两个白名单：
 
-- 主题：Agent、编码、推理、多模态、语音、视频、图像生成、RAG、端侧、数据/训练、搜索、部署/工程、开源生态、具身智能、MCP/工具调用
-- 实体：OpenAI、Anthropic、DeepSeek、DeepMind、Google、Meta、Microsoft、xAI、Hugging Face、GitHub、arXiv
+- 主题：WordPress、WooCommerce、SEO、索引、多语言、Core Web Vitals、站点安全、会员、Newsletter、支付、定价、留存、产品机会、API、工具站、自动化、Agent、编码、推理、多模态、语音、视频、图像生成、RAG、端侧、数据/训练、搜索、部署/工程、开源生态、具身智能、MCP/工具调用
+- 实体：WordPress、WooCommerce、Cloudflare、Vercel、Ghost、Stripe、n8n、Substack、MemberPress、Wordfence、Patchstack、Ahrefs、OpenAI、Anthropic、DeepSeek、DeepMind、Google、Meta、Microsoft、xAI、Hugging Face、GitHub、arXiv
 
-正文中即使明确出现了 NVIDIA、Apple、阿里等其他实体，也不要把它们放进 `tags`。不要创造白名单之外的标签。没有适用的主题或实体时，只返回第一个分类标签；例如学校限制 AI 使用的监管新闻，不需要强行归到“编码”或“推理”。
+正文中即使明确出现了 NVIDIA、Apple、阿里等其他实体，也不要把它们放进 `tags`。不要创造白名单之外的标签。没有适用的主题或实体时，只返回第一个分类标签；例如支付规则变化，不需要强行归到“编码”或“推理”。
 
 ## 候选阅读价值
 
@@ -48,6 +48,8 @@
 语气克制、自然、具体，不命令读者。禁止使用：必读、必须看、赶紧、立刻、不容错过、重磅、颠覆、革命性、划时代、炸裂、这意味着、值得注意的是、证实、证明、首次、首个、最大、唯一、创纪录、填补空白、重新定义、重塑、仍需验证、有待观察、实际效果未知。禁止冒号、破折号和英文双引号。
 
 材料只有下载口号、标题、营销话术，或无法支持任何具体阅读价值时，`editorialJudgment` 必须返回空字符串；宁可不展示，也不要编造价值或写成劝退式审稿意见。是否为空不改变其他字段，也不影响系统的精选计算。
+
+个人相关性只根据材料支持的影响判断，可说明适用条件、涉及版本和迁移方法；不假定读者已安装某插件，不把推测的需求、机会和收入说成已验证事实。
 
 ## 中文标题和摘要
 
@@ -59,4 +61,4 @@
 
 只返回合法 JSON，不要 Markdown，不要解释。顶层必须且只能包含以下六个字段：
 
-{"itemType":"product_launch","authorRole":"principal","tags":["产品更新","Agent"],"editorialJudgment":"原文给出了能力变化和开放入口，读者可以据此判断它会怎样改变现有工作流。","titleZh":"某产品发布智能体功能","summaryZh":"某产品发布新的智能体功能，给出了开放入口和主要能力变化。"}
+{"itemType":"product_launch","authorRole":"principal","tags":["产品更新","WordPress"],"editorialJudgment":"原文给出了能力变化和开放入口，读者可以据此判断它会怎样改变现有工作流。","titleZh":"某 WordPress 插件发布兼容性更新","summaryZh":"某 WordPress 插件发布兼容性更新，说明适用版本与升级方式。"}
