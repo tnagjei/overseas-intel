@@ -1,14 +1,15 @@
-import { SITE, withSubject } from "@aihot/industry/site";
-import { data as withHeaders, redirect, useLoaderData } from "react-router";
+import { READING } from "@aihot/industry/reading";
+import { data as withHeaders, Link, redirect, useLoaderData } from "react-router";
 import type { Route } from "./+types/home";
 import type { TimelineResponse } from "@aihot/contracts/site";
-import { isCategoryKey, isChannelKey } from "@aihot/contracts/taxonomy";
+import { CATEGORY_LABELS, isCategoryKey, isChannelKey } from "@aihot/contracts/taxonomy";
 import { loadOr404, queryString, releaseBoundCache } from "../lib/api.server";
 import { listPath, organizationLd, pageMeta } from "../lib/seo";
 import { Wordmark } from "../components/Logo";
 import { Timeline } from "../features/feed/Timeline";
 import { HotTopics } from "../features/feed/HotTopics";
-import { CategoryTabs, SearchField, SearchIconLink } from "../features/feed/Filters";
+import { BusinessFocus } from "../features/feed/BusinessFocus";
+import { CategoryTabs, hrefWith, SearchField, SearchIconLink } from "../features/feed/Filters";
 import { beijingDate, beijingWeekday } from "../lib/format";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -48,23 +49,32 @@ function TodayLabel() {
 
 export default function Home() {
   const { data, filters } = useLoaderData<typeof loader>();
-  const title = filters.tag ? `#${filters.tag}` : "精选";
+  const title = filters.tag ? `#${filters.tag}` : filters.category ? `${CATEGORY_LABELS[filters.category]}精选` : filters.channel === "firstParty" ? "官方一手精选" : READING.title;
+  const filtered = !!filters.tag || !!filters.category || filters.channel !== "all";
+  const allHref = hrefWith("/all", new URLSearchParams(), { category: filters.category, tag: filters.tag, channel: filters.channel === "all" ? null : filters.channel });
   return (
     <div className="pb-6">
-      {/* Phones: brand bar, today's hot topics, then the feed under "最新精选". */}
+      {/* Phones keep the brand and date above the personal business concerns. */}
       <div className="flex h-14 items-center justify-between lg:hidden">
         <Wordmark size={20} className="text-ink" />
         <TodayLabel />
       </div>
+      <div className="mb-5 pt-3 lg:pt-0">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-[22px] font-semibold leading-[1.3] text-ink lg:text-[24px]">{title}</h1>
+          {filtered && <Link to="/" className="shrink-0 text-[12.5px] text-accent hover:underline">清除筛选</Link>}
+        </div>
+        <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-ink-3">{READING.description}</p>
+      </div>
+      <BusinessFocus tag={filters.tag} />
       <div className="hidden lg:block">
-        <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">{title}</h1>
-        <div className="mb-5 mt-4 flex items-center justify-between gap-4">
+        <div className="mb-5 flex items-center justify-between gap-4">
           <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-desk" className="min-w-0" />
           <SearchField variant="track" keep={{ category: filters.category }} />
         </div>
       </div>
 
-      {data.hot && <HotTopics entries={data.hot} />}
+      {!filtered && data.hot && <HotTopics entries={data.hot} />}
 
       <h2 className="mt-6 text-[20px] font-bold text-ink lg:hidden">{filters.tag ? title : "最新精选"}</h2>
       <div className="-mx-4 mt-3 flex items-center gap-2 pl-4 pr-2 lg:hidden">
@@ -72,7 +82,12 @@ export default function Home() {
         <SearchIconLink />
       </div>
 
-      <Timeline initial={data} filters={data.filters} />
+      <Timeline
+        initial={data}
+        filters={data.filters}
+        showTags
+        emptyAction={<Link to={allHref} className="text-[13px] font-medium text-accent hover:underline">查看这个范围的全部动态</Link>}
+      />
     </div>
   );
 }

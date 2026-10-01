@@ -1,5 +1,6 @@
 // Site navigation, one place for the desktop sidebar, the mobile tab bar and the mobile "更多" page.
 import { withSubject } from "@aihot/industry/site";
+import { READING } from "@aihot/industry/reading";
 import { FEATURES } from "@aihot/industry/features";
 import type { ReactNode } from "react";
 import {
@@ -20,7 +21,7 @@ export const SIDEBAR: Array<{ title: string; items: NavItem[] }> = [
   {
     title: "内容",
     items: [
-      { to: "/", label: "精选", icon: IconBolt, end: true },
+      { to: "/", label: READING.navLabel, icon: IconBolt, end: true },
       { to: "/all", label: `全部${withSubject("动态")}`, icon: IconList },
       { to: "/hot", label: "热点榜", icon: IconFlame },
       { to: "/daily", label: withSubject("日报"), icon: IconDoc },
@@ -52,7 +53,7 @@ export const SIDEBAR: Array<{ title: string; items: NavItem[] }> = [
 ];
 
 export const TABBAR: NavItem[] = [
-  { to: "/", label: "精选", icon: IconBolt, end: true },
+  { to: "/", label: READING.navLabel, icon: IconBolt, end: true },
   { to: "/all", label: "全部", icon: IconList },
   { to: "/daily", label: "日报", icon: IconDoc },
   { to: "/more", label: "更多", icon: IconApps, changelog: true },

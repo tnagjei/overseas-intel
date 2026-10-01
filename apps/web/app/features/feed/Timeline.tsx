@@ -108,7 +108,7 @@ export function TimelineSlot({ at, children, fresh = false, delay = 0, dataKey }
   );
 }
 
-export function Timeline({ initial, filters }: { initial: TimelineResponse; filters: TimelineFilters }) {
+export function Timeline({ initial, filters, showTags = false, emptyAction }: { initial: TimelineResponse; filters: TimelineFilters; showTags?: boolean; emptyAction?: React.ReactNode }) {
   const location = useLocation();
   const navigation = useNavigation();
   const readSet = useReadSet();
@@ -272,7 +272,7 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
     <div className="relative">
       {days.length === 0 && (
         <div className="lg:card">
-          <EmptyState title="这个筛选下还没有精选内容">换个类别看看，或者去全部动态里找找。</EmptyState>
+          <EmptyState title="这个筛选下还没有精选内容" action={emptyAction}>换个类别看看，或者去全部动态里找找。</EmptyState>
         </div>
       )}
 
@@ -289,7 +289,7 @@ export function Timeline({ initial, filters }: { initial: TimelineResponse; filt
                     const delay = fresh ? Math.min(order++, 10) * 40 : 0;
                     return (
                       <TimelineSlot key={c.key} dataKey={c.key} at={c.anchorAt} fresh={fresh} delay={delay}>
-                        <FeedItem item={c.item} group={c.group} filters={filters} read={readSet.has(c.item.id)} onOpen={markRead} />
+                        <FeedItem item={c.item} group={c.group} filters={filters} read={readSet.has(c.item.id)} onOpen={markRead} showTags={showTags} />
                       </TimelineSlot>
                     );
                   })}
